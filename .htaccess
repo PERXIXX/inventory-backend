@@ -1,0 +1,11 @@
+Options -Indexes
+
+RewriteEngine On
+
+# ให้ PHP อ่านค่า .php ถูกต้อง
+AddType application/x-httpd-php .php
+
+# ถ้า URL ไม่มีไฟล์ตรงตัว ให้ fallback ไป index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L]
