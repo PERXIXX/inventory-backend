@@ -1,15 +1,18 @@
 <?php
-$host = getenv("PGHOST");
-$user = getenv("PGUSER");
-$pass = getenv("PGPASSWORD");
-$dbname = getenv("PGDATABASE");
 
-// หากเป็น MySQL ให้สลับ mysqli ด้านล่างเป็นสิ่งที่คุณใช้ตอนนี้
-$conn = new mysqli($host, $user, $pass, $dbname);
+$DB_HOST = getenv("PGHOST");
+$DB_NAME = getenv("PGDATABASE");
+$DB_USER = getenv("PGUSER");
+$DB_PASS = getenv("PGPASSWORD");
 
-if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(["error" => "Database connection failed", "details" => $conn->connect_error]);
-    exit;
+$dsn = "pgsql:host=$DB_HOST;port=5432;dbname=$DB_NAME;sslmode=require;";
+
+try {
+    $conn = new PDO($dsn, $DB_USER, $DB_PASS);
+    $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+} catch(PDOException $e) {
+    die(json_encode([
+        "success" => false,
+        "message" => $e->getMessage()
+    ]));
 }
-?>
