@@ -1,17 +1,17 @@
-# ใช้ภาพ PHP + Apache
 FROM php:8.2-apache
 
-# เปิด mod_rewrite
+# Enable Apache rewrite
 RUN a2enmod rewrite
 
-# ติดตั้ง extension ที่จำเป็น
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+# Install PostgreSQL PDO
+RUN apt-get update && apt-get install -y libpq-dev \
+    && docker-php-ext-install pdo pdo_pgsql
 
-# ตั้งค่า Document Root
-WORKDIR /var/www/html
+# Copy project files
+COPY . /var/www/html/
 
-# คัดลอกโค้ดทั้งหมดเข้า container
-COPY . /var/www/html
+# Apache permission fix
+RUN chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
 
-# ให้ Apache เข้าถึงไฟล์ทุกตัว
-RUN chown -R www-data:www-data /var/www/html
+EXPOSE 80
