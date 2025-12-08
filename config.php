@@ -1,18 +1,15 @@
 <?php
-$DB_HOST = getenv('DB_HOST');
-$DB_USER = getenv('DB_USER');
-$DB_PASS = getenv('DB_PASS');
-$DB_NAME = getenv('DB_NAME');
+$host = getenv("PGHOST");
+$user = getenv("PGUSER");
+$pass = getenv("PGPASSWORD");
+$dbname = getenv("PGDATABASE");
 
-$conn = new mysqli($DB_HOST, $DB_USER, $DB_PASS, $DB_NAME);
+// หากเป็น MySQL ให้สลับ mysqli ด้านล่างเป็นสิ่งที่คุณใช้ตอนนี้
+$conn = new mysqli($host, $user, $pass, $dbname);
 
 if ($conn->connect_error) {
     http_response_code(500);
-    die(json_encode([
-        "success" => false,
-        "message" => "Database connection failed: " . $conn->connect_error
-    ]));
+    echo json_encode(["error" => "Database connection failed", "details" => $conn->connect_error]);
+    exit;
 }
-
-$conn->set_charset("utf8mb4");
 ?>
