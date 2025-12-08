@@ -1,55 +1,57 @@
 <?php
-header("Content-Type: application/json; charset=utf-8");
-require_once(__DIR__ . '/../config.php');
-
-// CORS
+header('Content-Type: application/json');
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Headers: Content-Type");
-header("Access-Control-Allow-Methods: POST, GET, OPTIONS");
 
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit();
-}
+// โหลด config
+require_once __DIR__ . "/../config.php";
 
-$data = json_decode(file_get_contents("php://input"));
+// รับข้อมูล JSON จาก request body
+$input = json_decode(file_get_contents("php://input"), true);
 
-if (empty($data->username) || empty($data->password)) {
-    echo json_encode(['success' => false, 'message' => 'กรุณากรอกชื่อผู้ใช้และรหัสผ่าน']);
+// ตรวจสอบ input
+if (!$input || !isset($input['username']) || !isset($input['password'])) {
+    echo json_encode([
+        "success" => false,
+        "message" => "กรุณากรอกชื่อผู้ใช้และรหัสผ่าน"
+    ]);
     exit;
 }
 
-$username = $conn->real_escape_string($data->username);
-$password = $data->password;
+$username = $input['username'];
+$password = $input['password'];
 
-$sql = "SELECT retailer_id, password_hash, shop_name, role 
-        FROM retailers WHERE username = ?";
-$stmt = $conn->prepare($sql);
-$stmt->bind_param("s", $username);
-$stmt->execute();
-$result = $stmt->get_result();
-$row = $result->fetch_assoc();
+try {
+    // Query ค้นหาผู้ใช้
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE username = :username LIMIT 1");
+    $stmt->execute([":username" => $username]);
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
-if ($row) {
-
-    // ตรวจสอบโดยใช้ password_verify
-    if (password_verify($password, $row['password_hash'])) {
-
-        echo json_encode([
-            'success' => true,
-            'retailer_id' => $row['retailer_id'],
-            'role' => $row['role'],
-            'shop_name' => $row['shop_name'],
-            'message' => 'เข้าสู่ระบบสำเร็จ'
-        ]);
-
-    } else {
-        echo json_encode(['success' => false, 'message' => 'รหัสผ่านไม่ถูกต้อง']);
+    if (!$user) {
+        echo json_encode(["success" => false, "message" => "ไม่พบบัญชีผู้ใช้"]);
+        exit;
     }
 
-} else {
-    echo json_encode(['success' => false, 'message' => 'ไม่พบผู้ใช้']);
-}
+    // ตรวจสอบรหัสผ่าน
+    if (!password_verify($password, $user['password'])) {
+        echo json_encode(["success" => false, "message" => "รหัสผ่านไม่ถูกต้อง"]);
+        exit;
+    }
 
-$stmt->close();
-$conn->close();
+    // Login สำเร็จ
+    echo json_encode([
+        "success" => true,
+        "message" => "เข้าสู่ระบบสำเร็จ",
+        "user" => [
+            "id" => $user['id'],
+            "username" => $user['username']
+        ]
+    ]);
+
+} catch (Exception $e) {
+    echo json_encode([
+        "success" => false,
+        "message" => "เกิดข้อผิดพลาด: " . $e->getMessage()
+    ]);
+}
+?>
